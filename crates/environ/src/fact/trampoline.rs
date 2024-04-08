@@ -108,45 +108,46 @@ pub(super) fn compile(module: &mut Module<'_>, adapter: &AdapterData) {
         );
 
         (
-            Compiler::new(module, result, lower_sig.params.len() as u32),
+            Compiler::new(
+                module,
+                result,
+                lower_sig.params.len() as u32,
+                emit_resource_call,
+            ),
             lower_sig,
             lift_sig,
         )
     }
 
-    let async_start_adapter = |module: &mut Module, param_globals| {
-        let sig = module.types.async_start_signature(&adapter.lift);
-        let ty = module.core_types.function(&sig.params, &sig.results);
-        let result = module.funcs.push(Function::new(
-            Some(format!("[async-start]{}", adapter.name)),
-            ty,
-        ));
+    let async_start_adapter =
+        |module: &mut Module, param_globals| {
+            let sig = module.types.async_start_signature(&adapter.lift);
+            let ty = module.core_types.function(&sig.params, &sig.results);
+            let result = module.funcs.push(Function::new(
+                Some(format!("[async-start]{}", adapter.name)),
+                ty,
+            ));
 
-        Compiler::new(module, result, sig.params.len() as u32).compile_async_start_adapter(
-            adapter,
-            &sig,
-            param_globals,
-        );
+            Compiler::new(module, result, sig.params.len() as u32, false)
+                .compile_async_start_adapter(adapter, &sig, param_globals);
 
-        result
-    };
+            result
+        };
 
-    let async_return_adapter = |module: &mut Module, result_globals| {
-        let sig = module.types.async_return_signature(&adapter.lift);
-        let ty = module.core_types.function(&sig.params, &sig.results);
-        let result = module.funcs.push(Function::new(
-            Some(format!("[async-return]{}", adapter.name)),
-            ty,
-        ));
+    let async_return_adapter =
+        |module: &mut Module, result_globals| {
+            let sig = module.types.async_return_signature(&adapter.lift);
+            let ty = module.core_types.function(&sig.params, &sig.results);
+            let result = module.funcs.push(Function::new(
+                Some(format!("[async-return]{}", adapter.name)),
+                ty,
+            ));
 
-        Compiler::new(module, result, sig.params.len() as u32).compile_async_return_adapter(
-            adapter,
-            &sig,
-            result_globals,
-        );
+            Compiler::new(module, result, sig.params.len() as u32, false)
+                .compile_async_return_adapter(adapter, &sig, result_globals);
 
-        result
-    };
+            result
+        };
 
     match (adapter.lower.options.async_, adapter.lift.options.async_) {
         (false, false) => {
@@ -194,6 +195,14 @@ pub(super) fn compile(module: &mut Module<'_>, adapter: &AdapterData) {
             // Similarly, the `async-return` function may write its result to
             // global variables from which the adapter function can read and
             // return them via the stack to the caller.
+            //
+            // TODO: More than one of these calls can be made from the same
+            // instance concurrently when the caller instance was itself called
+            // via a async-without-callback-lifted export.  In that case, these
+            // globals could be clobbered by other calls between when we write
+            // to them and read from them.  We need to refactor this to save the
+            // values in host-managed, task-local storage rather than global
+            // variables.
             let lower_sig = module.types.signature(&adapter.lower, Context::Lower);
             let param_globals = if lower_sig.params_indirect {
                 None
@@ -403,7 +412,12 @@ struct Memory<'a> {
 }
 
 impl<'a, 'b> Compiler<'a, 'b> {
-    fn new(module: &'b mut Module<'a>, result: FunctionId, nlocals: u32) -> Self {
+    fn new(
+        module: &'b mut Module<'a>,
+        result: FunctionId,
+        nlocals: u32,
+        emit_resource_call: bool,
+    ) -> Self {
         Self {
             types: module.types,
             module,
@@ -413,7 +427,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
             free_locals: HashMap::new(),
             traps: Vec::new(),
             fuel: INITIAL_FUEL,
-            emit_resource_call: false,
+            emit_resource_call,
         }
     }
 
@@ -440,7 +454,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
             i32::try_from(adapter.lower.instance.as_u32()).unwrap(),
         ));
         self.instruction(I32Const(
-            i32::try_from(self.types[adapter.lift.ty].params.as_u32()).unwrap(),
+            i32::try_from(self.types[adapter.lift.ty].results.as_u32()).unwrap(),
         ));
         self.instruction(LocalGet(0));
         self.instruction(LocalGet(1));
@@ -495,7 +509,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
             i32::try_from(adapter.lower.instance.as_u32()).unwrap(),
         ));
         self.instruction(I32Const(
-            i32::try_from(self.types[adapter.lift.ty].params.as_u32()).unwrap(),
+            i32::try_from(self.types[adapter.lift.ty].results.as_u32()).unwrap(),
         ));
 
         let results_local = if let Some(globals) = param_globals {
@@ -575,7 +589,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
             i32::try_from(adapter.lower.instance.as_u32()).unwrap(),
         ));
         self.instruction(I32Const(
-            i32::try_from(self.types[adapter.lift.ty].params.as_u32()).unwrap(),
+            i32::try_from(self.types[adapter.lift.ty].results.as_u32()).unwrap(),
         ));
         self.instruction(LocalGet(0));
         self.instruction(LocalGet(1));
