@@ -61,6 +61,12 @@ pub struct ComponentInstance {
     component_resource_tables: PrimaryMap<TypeResourceTableIndex, ResourceTable>,
 
     component_waitable_tables: PrimaryMap<RuntimeComponentInstanceIndex, StateTable<WaitableState>>,
+
+    /// Tracking for error contexts
+    ///
+    /// At the component level, only the number of references (`usize`) to a given error context is tracked,
+    /// with state related to the error context being held at the component model level, in concurrent
+    /// state.
     component_error_context_tables: PrimaryMap<TypeErrorContextTableIndex, StateTable<usize>>,
 
     /// Storage for the type information about resources within this component
@@ -355,6 +361,28 @@ pub enum WaitableState {
     Stream(TypeStreamTableIndex, StreamFutureState),
     /// Represents a future handle.
     Future(TypeFutureTableIndex, StreamFutureState),
+}
+
+/// Represents the state associated with an error context
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
+pub struct ErrorContextState {
+    /// Global reference count of an error-context
+    ///
+    /// While components keep their own local ref counts for any individual error context
+    /// this state is maintained across component and enables global freeing of error contexts.
+    pub(crate) global_ref_count: usize,
+    /// Debug message associated with the error context
+    pub(crate) debug_msg: String,
+}
+
+impl ErrorContextState {
+    /// Create a new error context
+    pub(crate) fn from_debug_msg(debug_msg: String) -> Self {
+        Self {
+            global_ref_count: 1,
+            debug_msg,
+        }
+    }
 }
 
 impl ComponentInstance {
@@ -1060,6 +1088,7 @@ impl ComponentInstance {
         }
     }
 
+    /// Transfer the state of a given error context to a different place
     pub(crate) fn error_context_transfer(
         &mut self,
         src_idx: u32,
@@ -1069,8 +1098,8 @@ impl ComponentInstance {
         let (rep, _) = self.component_error_context_tables[src].get_mut_by_index(src_idx)?;
         let dst = &mut self.component_error_context_tables[dst];
 
-        if let Some((dst_idx, dst_state)) = dst.get_mut_by_rep(rep) {
-            *dst_state += 1;
+        if let Some((dst_idx, count)) = dst.get_mut_by_rep(rep.clone()) {
+            *count += 1;
             Ok(dst_idx)
         } else {
             dst.insert(rep, 1)

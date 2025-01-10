@@ -5,14 +5,15 @@ use {
     },
     crate::{
         component::{
-            func::{self, LiftContext, LowerContext, Options},
+            func::{self, Lift, LiftContext, LowerContext, Options},
             matching::InstanceType,
             values::{ErrorContextAny, FutureAny, StreamAny},
-            Val, WasmList,
+            Lower, Val, WasmList, WasmStr,
         },
         vm::{
             component::{
-                ComponentInstance, StateTable, StreamFutureState, VMComponentContext, WaitableState,
+                ComponentInstance, ErrorContextState, StateTable, StreamFutureState,
+                VMComponentContext, WaitableState,
             },
             SendSyncPtr, VMFuncRef, VMMemoryDefinition, VMOpaqueContext, VMStore,
         },
@@ -1996,27 +1997,71 @@ pub(crate) extern "C" fn flat_stream_read<T>(
     )
 }
 
+/// Create a new error context for the given component
 pub(crate) extern "C" fn error_context_new<T>(
     vmctx: *mut VMOpaqueContext,
     memory: *mut VMMemoryDefinition,
     realloc: *mut VMFuncRef,
     string_encoding: u8,
     ty: TypeErrorContextTableIndex,
-    address: u32,
-    count: u32,
+    debug_msg_address: u32,
+    debug_msg_len: u32,
 ) -> u64 {
     unsafe {
         call_host_and_handle_result::<T, u32>(vmctx, || {
-            _ = (
-                vmctx,
-                memory,
-                realloc,
-                StringEncoding::from_u8(string_encoding).unwrap(),
-                ty,
-                address,
-                count,
+            // Retrieve the component instance
+            let cx = VMComponentContext::from_opaque(vmctx);
+            let instance = (*cx).instance();
+
+            //  Read string from guest memory
+            let mut cx = StoreContextMut::<T>(&mut *(*instance).store().cast());
+            let options = Options::new(
+                cx.0.id(),
+                NonNull::new(memory),
+                NonNull::new(realloc),
+                StringEncoding::from_u8(string_encoding).ok_or_else(|| {
+                    anyhow::anyhow!("failed to convert u8 string encoding [{string_encoding}]")
+                })?,
+                false,
+                None,
             );
-            bail!("todo: `error.new` not yet implemented");
+            let lift_ctx =
+                &mut LiftContext::new(cx.0, &options, (*instance).component_types(), instance);
+            let s = {
+                let address = usize::try_from(debug_msg_address)?;
+                let len = usize::try_from(debug_msg_len)?;
+                WasmStr::load(
+                    lift_ctx,
+                    InterfaceType::String,
+                    lift_ctx
+                        .memory()
+                        .get(address..)
+                        .and_then(|b| b.get(..len))
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("invalid debug message pointer: out of bounds")
+                        })?,
+                )?
+            };
+
+            // Create a new ErrorContext that is tracked along with other concurrent state
+            let err_ctx = ErrorContextState::from_debug_msg(s.to_str(&cx)?.to_string());
+            let table_id = cx.concurrent_state().table.push(err_ctx)?;
+
+            // Error context are tracked both locally (to a single component instance) and globally
+            // the counts for both must stay in sync.
+            //
+            // Here we reflect the newly created global concurrent error context state into the
+            // component instance's locally tracked count.
+            let local_tbl = (*instance)
+                .component_error_context_tables()
+                .get_mut_or_insert_with(ty, || StateTable::default());
+            assert!(
+                !local_tbl.has_handle(table_id.rep()),
+                "newly created error context state already tracked by component"
+            );
+            let local_idx = local_tbl.insert(table_id.rep(), 1)?;
+
+            Ok(local_idx)
         })
     }
 }
@@ -2027,21 +2072,68 @@ pub(crate) extern "C" fn error_context_debug_message<T>(
     realloc: *mut VMFuncRef,
     string_encoding: u8,
     ty: TypeErrorContextTableIndex,
-    handle: u32,
-    address: u32,
+    err_ctx_handle: u32,
+    debug_msg_address: u32,
 ) -> bool {
     unsafe {
         call_host_and_handle_result::<T, ()>(vmctx, || {
-            _ = (
-                vmctx,
-                memory,
-                realloc,
-                StringEncoding::from_u8(string_encoding).unwrap(),
-                ty,
-                handle,
-                address,
+            // Retrieve the component instance
+            let cx = VMComponentContext::from_opaque(vmctx);
+            let instance = (*cx).instance();
+            let mut cx = StoreContextMut::<T>(&mut *(*instance).store().cast());
+            let store_id = cx.0.id();
+
+            // Retrieve the error context and internal debug message
+            let (state_table_id_rep, component_ref_count) = (*instance)
+                .component_error_context_tables()[ty]
+                .get_mut_by_index(err_ctx_handle)?;
+            let state_table_id = TableId::<ErrorContextState>::new(state_table_id_rep);
+
+            // Get the state associated with the error context
+            let ErrorContextState {
+                global_ref_count,
+                debug_msg,
+            } = cx.concurrent_state().table.get_mut(state_table_id)?;
+            let debug_msg = debug_msg.clone();
+
+            // Decrement the ref count from the global and local (component) level tracking
+            assert!(*component_ref_count >= 1);
+            *component_ref_count -= 1;
+            assert!(*global_ref_count >= 1);
+            *global_ref_count -= 1;
+
+            // If the local ref count is zero, we can remove component level tracking
+            if *component_ref_count == 0 {
+                (*instance).component_error_context_tables()[ty].remove_by_index(err_ctx_handle)?;
+            }
+
+            // If the global ref count is zero, we can remove the error context completely
+            if *global_ref_count == 0 {
+                assert!(*component_ref_count == 0);
+                cx.concurrent_state().table.delete(state_table_id)?;
+            }
+
+            // Get the state associated with the
+            // Lower the string into the component's memory
+            let options = Options::new(
+                store_id,
+                NonNull::new(memory),
+                NonNull::new(realloc),
+                StringEncoding::from_u8(string_encoding).ok_or_else(|| {
+                    anyhow::anyhow!("failed to convert u8 string encoding [{string_encoding}]")
+                })?,
+                false,
+                None,
             );
-            bail!("todo: `error.debug-message` not yet implemented");
+            let lower_cx =
+                &mut LowerContext::new(cx, &options, (*instance).component_types(), instance);
+            debug_msg.as_str().store(
+                lower_cx,
+                InterfaceType::String,
+                usize::try_from(debug_msg_address)?,
+            )?;
+
+            Ok(())
         })
     }
 }
@@ -2055,12 +2147,12 @@ pub(crate) extern "C" fn error_context_drop<T>(
         call_host_and_handle_result::<T, _>(vmctx, || {
             let cx = VMComponentContext::from_opaque(vmctx);
             let instance = (*cx).instance();
-            let (_, count) =
+            let (_, ref_count) =
                 (*instance).component_error_context_tables()[ty].get_mut_by_index(error_context)?;
-            assert!(*count > 0);
-            *count -= 1;
+            assert!(*ref_count > 0);
+            *ref_count -= 1;
 
-            if *count == 0 {
+            if *ref_count == 0 {
                 (*instance).component_error_context_tables()[ty].remove_by_index(error_context)?;
             }
 
