@@ -300,7 +300,7 @@ pub mod foo {
                 where
                     Self: Sized;
                 /// Comment out identifiers that collide when mapped to snake_case, for now; see
-                /// https://github.com/WebAssembly/component-model/issues/118
+                ///  https://github.com/WebAssembly/component-model/issues/118
                 /// APPLE: func()
                 /// APPLE-pear-GRAPE: func()
                 /// apple-PEAR-grape: func()
@@ -843,7 +843,7 @@ pub mod foo {
                     <_T as Host>::a0(store)
                 }
                 /// Comment out identifiers that collide when mapped to snake_case, for now; see
-                /// https://github.com/WebAssembly/component-model/issues/118
+                ///  https://github.com/WebAssembly/component-model/issues/118
                 /// APPLE: func()
                 /// APPLE-pear-GRAPE: func()
                 /// apple-PEAR-grape: func()
@@ -1277,7 +1277,7 @@ pub mod exports {
                         Ok(promise)
                     }
                     /// Comment out identifiers that collide when mapped to snake_case, for now; see
-                    /// https://github.com/WebAssembly/component-model/issues/118
+                    ///  https://github.com/WebAssembly/component-model/issues/118
                     /// APPLE: func()
                     /// APPLE-pear-GRAPE: func()
                     /// apple-PEAR-grape: func()
