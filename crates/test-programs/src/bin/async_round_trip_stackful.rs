@@ -15,45 +15,45 @@ use std::alloc::{self, Layout};
 
 #[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "[export]local:local/baz")]
-extern "C" {
+unsafe extern "C" {
     #[link_name = "[task-return]foo"]
     fn task_return_foo(ptr: *mut u8, len: usize);
 }
 #[cfg(not(target_arch = "wasm32"))]
-extern "C" fn task_return_foo(_ptr: *mut u8, _len: usize) {
+unsafe extern "C" fn task_return_foo(_ptr: *mut u8, _len: usize) {
     unreachable!()
 }
 
 #[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "local:local/baz")]
-extern "C" {
+unsafe extern "C" {
     #[link_name = "[async]foo"]
     fn import_foo(params: *mut u8, results: *mut u8) -> u32;
 }
 #[cfg(not(target_arch = "wasm32"))]
-extern "C" fn import_foo(_params: *mut u8, _results: *mut u8) -> u32 {
+unsafe extern "C" fn import_foo(_params: *mut u8, _results: *mut u8) -> u32 {
     unreachable!()
 }
 
 #[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "$root")]
-extern "C" {
+unsafe extern "C" {
     #[link_name = "[task-wait]"]
     fn task_wait(results: *mut i32) -> i32;
 }
 #[cfg(not(target_arch = "wasm32"))]
-extern "C" fn task_wait(_results: *mut i32) -> i32 {
+unsafe extern "C" fn task_wait(_results: *mut i32) -> i32 {
     unreachable!()
 }
 
 #[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "$root")]
-extern "C" {
+unsafe extern "C" {
     #[link_name = "[subtask-drop]"]
     fn subtask_drop(task: u32);
 }
 #[cfg(not(target_arch = "wasm32"))]
-extern "C" fn subtask_drop(_task: u32) {
+unsafe extern "C" fn subtask_drop(_task: u32) {
     unreachable!()
 }
 
@@ -117,7 +117,7 @@ unsafe extern "C" fn export_foo(ptr: *mut u8, len: usize) {
 
 // Copied from `wit-bindgen`-generated output
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.35.0:local:local:round-trip:encoded world"]
+#[unsafe(link_section = "component-type:wit-bindgen:0.35.0:local:local:round-trip:encoded world")]
 #[doc(hidden)]
 #[allow(
     clippy::octal_escapes,

@@ -803,6 +803,7 @@ pub(crate) mod concurrent {
     pub(crate) extern "C" fn async_exit<T>(
         _cx: *mut VMOpaqueContext,
         _callback: *mut VMFuncRef,
+        _post_return: *mut VMFuncRef,
         _caller_instance: RuntimeComponentInstanceIndex,
         _callee: *mut VMFuncRef,
         _callee_instance: RuntimeComponentInstanceIndex,

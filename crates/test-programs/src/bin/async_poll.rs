@@ -19,7 +19,7 @@ fn task_poll() -> Option<(i32, i32, i32)> {
     #[cfg(target_arch = "wasm32")]
     {
         #[link(wasm_import_module = "$root")]
-        extern "C" {
+        unsafe extern "C" {
             #[link_name = "[task-poll]"]
             fn poll(_: *mut i32) -> i32;
         }
@@ -41,7 +41,7 @@ fn async_when_ready() -> i32 {
     #[cfg(target_arch = "wasm32")]
     {
         #[link(wasm_import_module = "local:local/ready")]
-        extern "C" {
+        unsafe extern "C" {
             #[link_name = "[async]when-ready"]
             fn call_when_ready(_: *mut u8, _: *mut u8) -> i32;
         }
@@ -60,7 +60,7 @@ fn subtask_drop(subtask: u32) {
     #[cfg(target_arch = "wasm32")]
     {
         #[link(wasm_import_module = "$root")]
-        extern "C" {
+        unsafe extern "C" {
             #[link_name = "[subtask-drop]"]
             fn subtask_drop(_: u32);
         }
