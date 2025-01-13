@@ -97,3 +97,7 @@ world post-return-caller {
 world post-return-callee {
   export post-return;
 }
+
+world error-context-usage {
+  export run;
+}
