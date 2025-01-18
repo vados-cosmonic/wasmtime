@@ -5080,7 +5080,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen"
 version = "0.37.0"
-source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+source = "git+https://github.com/dicej/wit-bindgen?branch=async-lower-result-fix#7003da66a7f24a8d1a7e21a68d357ad7e0990a28"
 dependencies = [
  "wit-bindgen-rt",
  "wit-bindgen-rust-macro",
@@ -5089,7 +5089,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-core"
 version = "0.37.0"
-source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+source = "git+https://github.com/dicej/wit-bindgen?branch=async-lower-result-fix#7003da66a7f24a8d1a7e21a68d357ad7e0990a28"
 dependencies = [
  "anyhow",
  "heck 0.5.0",
@@ -5099,7 +5099,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-rt"
 version = "0.37.0"
-source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+source = "git+https://github.com/dicej/wit-bindgen?branch=async-lower-result-fix#7003da66a7f24a8d1a7e21a68d357ad7e0990a28"
 dependencies = [
  "bitflags 2.6.0",
  "futures",
@@ -5109,7 +5109,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-rust"
 version = "0.37.0"
-source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+source = "git+https://github.com/dicej/wit-bindgen?branch=async-lower-result-fix#7003da66a7f24a8d1a7e21a68d357ad7e0990a28"
 dependencies = [
  "anyhow",
  "heck 0.5.0",
@@ -5124,7 +5124,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-rust-macro"
 version = "0.37.0"
-source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+source = "git+https://github.com/dicej/wit-bindgen?branch=async-lower-result-fix#7003da66a7f24a8d1a7e21a68d357ad7e0990a28"
 dependencies = [
  "anyhow",
  "prettyplease",
@@ -5285,3 +5285,18 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "wit-bindgen"
+version = "0.37.0"
+source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+
+[[patch.unused]]
+name = "wit-bindgen-rt"
+version = "0.37.0"
+source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"
+
+[[patch.unused]]
+name = "wit-bindgen-rust-macro"
+version = "0.37.0"
+source = "git+https://github.com/dicej/wit-bindgen?branch=feat/stream-unit#484cea338d375c16c15cbd4ef7652a788e6f9d43"

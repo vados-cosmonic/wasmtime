@@ -68,7 +68,7 @@ interface run-bool {
   run: func(v: bool);
 }
 
-interface run-result {
+interface run-err-ctx-result {
   run-fail: func() -> result<_, error-context>;
   run-pass: func() -> result<_, error-context>;
 }
@@ -145,11 +145,11 @@ world error-context-usage {
 }
 
 world error-context-callee {
-  export run-result;
+  export run-err-ctx-result;
   export run;
 }
 
 world error-context-caller {
-  import run-result;
+  import run-err-ctx-result;
   export run;
 }

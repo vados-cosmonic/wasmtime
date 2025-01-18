@@ -4,7 +4,7 @@ mod bindings {
         world: "error-context-caller",
         async: {
             imports: [
-                "local:local/run-result#run-fail",
+                "local:local/run-err-ctx-result#run-fail",
             ],
             exports: [
                 "local:local/run#run",
@@ -21,7 +21,7 @@ struct Component;
 
 impl Guest for Component {
     async fn run() {
-        let Err(err_ctx) = bindings::local::local::run_result::run_fail().await else {
+        let Err(err_ctx) = bindings::local::local::run_err_ctx_result::run_fail().await else {
             panic!("callee failure run should have produced an error");
         };
         _ = err_ctx.debug_message();

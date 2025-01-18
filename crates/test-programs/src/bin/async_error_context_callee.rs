@@ -5,8 +5,8 @@ mod bindings {
         async: {
             exports: [
                 "local:local/run#run",
-                "local:local/run-result#run-pass",
-                "local:local/run-result#run-fail",
+                "local:local/run-err-ctx-result#run-pass",
+                "local:local/run-err-ctx-result#run-fail",
             ],
         }
     });
@@ -18,7 +18,7 @@ use wit_bindgen_rt::async_support::{error_context_new, ErrorContext};
 
 struct Component;
 
-impl bindings::exports::local::local::run_result::Guest for Component {
+impl bindings::exports::local::local::run_err_ctx_result::Guest for Component {
     async fn run_fail() -> Result<(), ErrorContext> {
         Err(error_context_new("error".into()))
     }
