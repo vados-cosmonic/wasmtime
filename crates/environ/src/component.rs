@@ -84,7 +84,17 @@ macro_rules! foreach_builtin_component_function {
             resource_exit_call(vmctx: vmctx) -> bool;
 
             #[cfg(feature = "component-model-async")]
+            task_backpressure(vmctx: vmctx, caller_instance: u32, enabled: u32) -> bool;
+            #[cfg(feature = "component-model-async")]
             task_return(vmctx: vmctx, ty: u32, storage: ptr_u8, storage_len: size) -> bool;
+            #[cfg(feature = "component-model-async")]
+            task_wait(vmctx: vmctx, caller_instance: u32, async_: u8, memory: ptr_u8, payload: u32) -> u64;
+            #[cfg(feature = "component-model-async")]
+            task_poll(vmctx: vmctx, caller_instance: u32, async_: u8, memory: ptr_u8, payload: u32) -> u64;
+            #[cfg(feature = "component-model-async")]
+            task_yield(vmctx: vmctx, async_: u8) -> bool;
+            #[cfg(feature = "component-model-async")]
+            subtask_drop(vmctx: vmctx, caller_instance: u32, task_id: u32) -> bool;
             #[cfg(feature = "component-model-async")]
             async_enter(vmctx: vmctx, start: ptr_u8, return_: ptr_u8, caller_instance: u32, task_return_type: u32, params: u32, results: u32) -> bool;
             #[cfg(feature = "component-model-async")]

@@ -1,5 +1,9 @@
 use {
-    crate::{store::StoreInner, vm::VMFuncRef, AsContextMut, ValRaw},
+    crate::{
+        store::StoreInner,
+        vm::{VMFuncRef, VMMemoryDefinition},
+        AsContextMut, ValRaw,
+    },
     anyhow::Result,
     futures::{stream::FuturesUnordered, FutureExt},
     std::{boxed::Box, future::Future, pin::Pin},
@@ -77,12 +81,47 @@ impl<T: 'static> PromisesUnordered<T> {
 /// Trait representing component model ABI async intrinsics and fused adapter
 /// helper functions.
 pub unsafe trait VMComponentAsyncStore {
+    /// The `task.backpressure` intrinsic.
+    fn task_backpressure(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        enabled: u32,
+    ) -> Result<()>;
+
     /// The `task.return` intrinsic.
     fn task_return(
         &mut self,
         ty: TypeTupleIndex,
         storage: *mut ValRaw,
         storage_len: usize,
+    ) -> Result<()>;
+
+    /// The `task.wait` intrinsic.
+    fn task_wait(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        async_: bool,
+        memory: *mut VMMemoryDefinition,
+        payload: u32,
+    ) -> Result<u32>;
+
+    /// The `task.poll` intrinsic.
+    fn task_poll(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        async_: bool,
+        memory: *mut VMMemoryDefinition,
+        payload: u32,
+    ) -> Result<u32>;
+
+    /// The `task.yield` intrinsic.
+    fn task_yield(&mut self, async_: bool) -> Result<()>;
+
+    /// The `subtask.drop` intrinsic.
+    fn subtask_drop(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        task_id: u32,
     ) -> Result<()>;
 
     /// A helper function for fused adapter modules involving calls where one or
@@ -113,6 +152,15 @@ pub unsafe trait VMComponentAsyncStore {
 }
 
 unsafe impl<T> VMComponentAsyncStore for StoreInner<T> {
+    fn task_backpressure(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        enabled: u32,
+    ) -> Result<()> {
+        _ = (caller_instance, enabled);
+        todo!()
+    }
+
     fn task_return(
         &mut self,
         ty: TypeTupleIndex,
@@ -120,6 +168,42 @@ unsafe impl<T> VMComponentAsyncStore for StoreInner<T> {
         storage_len: usize,
     ) -> Result<()> {
         _ = (ty, storage, storage_len);
+        todo!()
+    }
+
+    fn task_wait(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        async_: bool,
+        memory: *mut VMMemoryDefinition,
+        payload: u32,
+    ) -> Result<u32> {
+        _ = (caller_instance, async_, memory, payload);
+        todo!()
+    }
+
+    fn task_poll(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        async_: bool,
+        memory: *mut VMMemoryDefinition,
+        payload: u32,
+    ) -> Result<u32> {
+        _ = (caller_instance, async_, memory, payload);
+        todo!()
+    }
+
+    fn task_yield(&mut self, async_: bool) -> Result<()> {
+        _ = async_;
+        todo!()
+    }
+
+    fn subtask_drop(
+        &mut self,
+        caller_instance: RuntimeComponentInstanceIndex,
+        task_id: u32,
+    ) -> Result<()> {
+        _ = (caller_instance, task_id);
         todo!()
     }
 

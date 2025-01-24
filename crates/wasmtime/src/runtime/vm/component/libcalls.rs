@@ -580,6 +580,24 @@ unsafe fn trap(_vmctx: NonNull<VMComponentContext>, code: u8) -> Result<Infallib
 }
 
 #[cfg(feature = "component-model-async")]
+unsafe fn task_backpressure(
+    vmctx: NonNull<VMComponentContext>,
+    caller_instance: u32,
+    enabled: u32,
+) -> Result<()> {
+    ComponentInstance::from_vmctx(vmctx, |instance| {
+        (*instance.store())
+            .component_async_store()
+            .task_backpressure(
+                wasmtime_environ::component::RuntimeComponentInstanceIndex::from_u32(
+                    caller_instance,
+                ),
+                enabled,
+            )
+    })
+}
+
+#[cfg(feature = "component-model-async")]
 unsafe fn task_return(
     vmctx: NonNull<VMComponentContext>,
     ty: u32,
@@ -591,6 +609,65 @@ unsafe fn task_return(
             wasmtime_environ::component::TypeTupleIndex::from_u32(ty),
             storage.cast::<crate::ValRaw>(),
             storage_len,
+        )
+    })
+}
+
+#[cfg(feature = "component-model-async")]
+unsafe fn task_wait(
+    vmctx: NonNull<VMComponentContext>,
+    caller_instance: u32,
+    async_: u8,
+    memory: *mut u8,
+    payload: u32,
+) -> Result<u32> {
+    ComponentInstance::from_vmctx(vmctx, |instance| {
+        (*instance.store()).component_async_store().task_wait(
+            wasmtime_environ::component::RuntimeComponentInstanceIndex::from_u32(caller_instance),
+            async_ != 0,
+            memory.cast::<crate::vm::VMMemoryDefinition>(),
+            payload,
+        )
+    })
+}
+
+#[cfg(feature = "component-model-async")]
+unsafe fn task_poll(
+    vmctx: NonNull<VMComponentContext>,
+    caller_instance: u32,
+    async_: u8,
+    memory: *mut u8,
+    payload: u32,
+) -> Result<u32> {
+    ComponentInstance::from_vmctx(vmctx, |instance| {
+        (*instance.store()).component_async_store().task_poll(
+            wasmtime_environ::component::RuntimeComponentInstanceIndex::from_u32(caller_instance),
+            async_ != 0,
+            memory.cast::<crate::vm::VMMemoryDefinition>(),
+            payload,
+        )
+    })
+}
+
+#[cfg(feature = "component-model-async")]
+unsafe fn task_yield(vmctx: NonNull<VMComponentContext>, async_: u8) -> Result<()> {
+    ComponentInstance::from_vmctx(vmctx, |instance| {
+        (*instance.store())
+            .component_async_store()
+            .task_yield(async_ != 0)
+    })
+}
+
+#[cfg(feature = "component-model-async")]
+unsafe fn subtask_drop(
+    vmctx: NonNull<VMComponentContext>,
+    caller_instance: u32,
+    task_id: u32,
+) -> Result<()> {
+    ComponentInstance::from_vmctx(vmctx, |instance| {
+        (*instance.store()).component_async_store().subtask_drop(
+            wasmtime_environ::component::RuntimeComponentInstanceIndex::from_u32(caller_instance),
+            task_id,
         )
     })
 }
