@@ -795,6 +795,7 @@ impl ComponentInstance {
         self.resource_tables().exit_call()
     }
 
+    #[cfg(feature = "component-model-async")]
     pub(crate) fn future_transfer(
         &mut self,
         src_idx: u32,
@@ -840,6 +841,7 @@ impl ComponentInstance {
         }
     }
 
+    #[cfg(feature = "component-model-async")]
     pub(crate) fn stream_transfer(
         &mut self,
         src_idx: u32,
@@ -886,6 +888,7 @@ impl ComponentInstance {
     }
 
     /// Transfer the state of a given error context from one component to another
+    #[cfg(feature = "component-model-async")]
     pub(crate) fn error_context_transfer(
         &mut self,
         src_idx: u32,

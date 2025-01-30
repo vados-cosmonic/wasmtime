@@ -7,10 +7,7 @@ use core::cell::Cell;
 use core::convert::Infallible;
 use core::ptr::NonNull;
 use core::slice;
-use wasmtime_environ::component::{
-    TypeComponentLocalErrorContextTableIndex, TypeFutureTableIndex, TypeResourceTableIndex,
-    TypeStreamTableIndex,
-};
+use wasmtime_environ::component::TypeResourceTableIndex;
 
 const UTF16_TAG: usize = 1 << 31;
 
@@ -735,8 +732,8 @@ unsafe fn future_transfer(
     src_table: u32,
     dst_table: u32,
 ) -> Result<u32> {
-    let src_table = TypeFutureTableIndex::from_u32(src_table);
-    let dst_table = TypeFutureTableIndex::from_u32(dst_table);
+    let src_table = wasmtime_environ::component::TypeFutureTableIndex::from_u32(src_table);
+    let dst_table = wasmtime_environ::component::TypeFutureTableIndex::from_u32(dst_table);
     ComponentInstance::from_vmctx(vmctx, |instance| {
         instance.future_transfer(src_idx, src_table, dst_table)
     })
@@ -749,8 +746,8 @@ unsafe fn stream_transfer(
     src_table: u32,
     dst_table: u32,
 ) -> Result<u32> {
-    let src_table = TypeStreamTableIndex::from_u32(src_table);
-    let dst_table = TypeStreamTableIndex::from_u32(dst_table);
+    let src_table = wasmtime_environ::component::TypeStreamTableIndex::from_u32(src_table);
+    let dst_table = wasmtime_environ::component::TypeStreamTableIndex::from_u32(dst_table);
     ComponentInstance::from_vmctx(vmctx, |instance| {
         instance.stream_transfer(src_idx, src_table, dst_table)
     })
@@ -763,8 +760,10 @@ unsafe fn error_context_transfer(
     src_table: u32,
     dst_table: u32,
 ) -> Result<u32> {
-    let src_table = TypeComponentLocalErrorContextTableIndex::from_u32(src_table);
-    let dst_table = TypeComponentLocalErrorContextTableIndex::from_u32(dst_table);
+    let src_table =
+        wasmtime_environ::component::TypeComponentLocalErrorContextTableIndex::from_u32(src_table);
+    let dst_table =
+        wasmtime_environ::component::TypeComponentLocalErrorContextTableIndex::from_u32(dst_table);
     ComponentInstance::from_vmctx(vmctx, |instance| {
         instance.error_context_transfer(src_idx, src_table, dst_table)
     })

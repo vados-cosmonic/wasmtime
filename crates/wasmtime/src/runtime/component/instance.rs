@@ -1,4 +1,3 @@
-use crate::component::concurrent;
 use crate::component::func::HostFunc;
 use crate::component::matching::InstanceType;
 use crate::component::{
@@ -840,9 +839,11 @@ impl<T> InstancePre<T> {
         {
             // TODO: do we need to return the store here due to the possible
             // invalidation of the reference we were passed?
-            concurrent::on_fiber(store, None, move |store| self.instantiate_impl(store))
-                .await?
-                .0
+            crate::component::concurrent::on_fiber(store, None, move |store| {
+                self.instantiate_impl(store)
+            })
+            .await?
+            .0
         }
         #[cfg(not(feature = "component-model-async"))]
         {
