@@ -91,18 +91,24 @@ indices! {
     pub struct TypeListIndex(u32);
     /// Index pointing to a future type in the component model.
     pub struct TypeFutureIndex(u32);
+
     /// Index pointing to a future table within a component.
     ///
     /// This is analogous to `TypeResourceTableIndex` in that it tracks
     /// ownership of futures within each (sub)component instance.
     pub struct TypeFutureTableIndex(u32);
+
     /// Index pointing to a stream type in the component model.
     pub struct TypeStreamIndex(u32);
+
     /// Index pointing to a stream table within a component.
     ///
     /// This is analogous to `TypeResourceTableIndex` in that it tracks
     /// ownership of stream within each (sub)component instance.
     pub struct TypeStreamTableIndex(u32);
+
+    /// Index pointing to a task
+    pub struct TypeTaskReturnIndex(u32);
 
     /// Index pointing to a error context table within a component.
     ///
