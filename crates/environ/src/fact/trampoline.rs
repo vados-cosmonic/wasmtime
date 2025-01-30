@@ -848,16 +848,10 @@ impl<'a, 'b> Compiler<'a, 'b> {
                 (abi.size32, abi.align32)
             };
 
-            if lift_opts.async_ {
-                let (addr, ty) = *param_locals.last().expect("no retptr");
-                assert_eq!(ty, lift_opts.ptr());
-                Destination::Memory(self.memory_operand(lift_opts, TempLocal::new(addr, ty), align))
-            } else {
-                // If there are too many parameters then space is allocated in the
-                // destination module for the parameters via its `realloc` function.
-                let size = MallocSize::Const(size);
-                Destination::Memory(self.malloc(lift_opts, size, align))
-            }
+            // If there are too many parameters then space is allocated in the
+            // destination module for the parameters via its `realloc` function.
+            let size = MallocSize::Const(size);
+            Destination::Memory(self.malloc(lift_opts, size, align))
         };
 
         let srcs = src
@@ -873,7 +867,7 @@ impl<'a, 'b> Compiler<'a, 'b> {
         // If the destination was linear memory instead of the stack then the
         // actual parameter that we're passing is the address of the values
         // stored, so ensure that's happening in the wasm body here.
-        if let (Destination::Memory(mem), false) = (dst, lift_opts.async_) {
+        if let Destination::Memory(mem) = dst {
             self.instruction(LocalGet(mem.addr.idx));
             self.free_temp_local(mem.addr);
         }
@@ -922,7 +916,14 @@ impl<'a, 'b> Compiler<'a, 'b> {
                 .map(|t| self.types.align(lift_opts, t))
                 .max()
                 .unwrap_or(1);
-            assert_eq!(result_locals.len(), if lower_opts.async_ { 2 } else { 1 });
+            assert_eq!(
+                result_locals.len(),
+                if lower_opts.async_ || lift_opts.async_ {
+                    2
+                } else {
+                    1
+                }
+            );
             let (addr, ty) = result_locals[0];
             assert_eq!(ty, lift_opts.ptr());
             Source::Memory(self.memory_operand(lift_opts, TempLocal::new(addr, ty), align))

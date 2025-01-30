@@ -105,25 +105,25 @@ impl ComponentTypesBuilder {
         let ty = &self[options.ty];
         let ptr_ty = options.options.ptr();
 
-        let mut params = vec![ptr_ty];
-
         let mut results_indirect = false;
         let results = match self.flatten_types(
             &options.options,
-            // Async functions return results by calling `task.return`, which
-            // accepts up to `MAX_FLAT_PARAMS` parameters via the stack.
+            // Both sync- and async-lifted functions accept up to this many core
+            // parameters via the stack.  The host will call the `async-start`
+            // function (possibly after a backpressure delay), which will
+            // _return_ that many values (using a multi-value return, if
+            // necessary); the host will then pass them directly to the callee.
             MAX_FLAT_PARAMS,
             self[ty.params].types.iter().copied(),
         ) {
             Some(list) => list,
             None => {
                 results_indirect = true;
-                params.push(ptr_ty);
-                Vec::new()
+                vec![ptr_ty]
             }
         };
         Signature {
-            params,
+            params: vec![ptr_ty],
             results,
             params_indirect: false,
             results_indirect,
