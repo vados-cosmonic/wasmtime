@@ -107,9 +107,6 @@ indices! {
     /// ownership of stream within each (sub)component instance.
     pub struct TypeStreamTableIndex(u32);
 
-    /// Index pointing to a task
-    pub struct TypeTaskReturnIndex(u32);
-
     /// Index pointing to a error context table within a component.
     ///
     /// This is analogous to `TypeResourceTableIndex` in that it tracks

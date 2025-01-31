@@ -7,7 +7,9 @@ use core::cell::Cell;
 use core::convert::Infallible;
 use core::ptr::NonNull;
 use core::slice;
-use wasmtime_environ::component::TypeResourceTableIndex;
+use wasmtime_environ::component::{
+    TypeComponentLocalErrorContextTableIndex, TypeResourceTableIndex,
+};
 
 const UTF16_TAG: usize = 1 << 31;
 

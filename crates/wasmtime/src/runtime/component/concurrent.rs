@@ -1704,7 +1704,7 @@ fn maybe_send_event<'a, T>(
         .component_waitable_tables()[callback.instance]
             .get_mut_by_rep(call.rep())
         else {
-            bail!("handle not found for waitable rep {}", call.rep());
+            bail!("(sending event) handle not found for waitable rep {}", call.rep());
         };
         log::trace!(
             "use callback to deliver event {event:?} to {} for {} (handle {handle}): {:?} {}",
@@ -2336,7 +2336,7 @@ fn task_check<T>(
                 (*instance).component_waitable_tables()[caller_instance].get_mut_by_rep(call.rep())
             };
             let Some((handle, _)) = entry else {
-                bail!("handle not found for waitable rep {}", call.rep());
+                bail!("(waiting for task) handle not found for waitable rep {}", call.rep());
             };
 
             let options = unsafe {
@@ -2371,7 +2371,7 @@ fn task_check<T>(
                         .get_mut_by_rep(call.rep())
                 };
                 let Some((handle, _)) = entry else {
-                    bail!("handle not found for waitable rep {}", call.rep());
+                    bail!("(polling task) handle not found for waitable rep {}", call.rep());
                 };
 
                 let options = unsafe {

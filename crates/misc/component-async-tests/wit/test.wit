@@ -101,6 +101,10 @@ interface run-result {
   run-pass: func() -> result<_, error-context>;
 }
 
+interface run-stream {
+  produce-then-error: func(times: u32) -> stream;
+}
+
 interface unit-stream {
   run: func(count: u32) -> stream;
 }
@@ -183,6 +187,16 @@ world error-context-callee {
 
 world error-context-caller {
   import run-result;
+  export run;
+}
+
+world error-context-stream-callee {
+  export run-stream;
+  export run;
+}
+
+world error-context-stream-caller {
+  import run-stream;
   export run;
 }
 
