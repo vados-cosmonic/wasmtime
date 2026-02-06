@@ -57,14 +57,24 @@ impl Wizer {
         store: &mut Store<T>,
         instance: &wasmtime::Instance,
     ) -> wasmtime::Result<()> {
-        log::debug!("Calling the initialization function");
+        let is_async_store = store.async_support();
+        log::debug!(
+            "Calling the {} initialization function",
+            if is_async_store { "async" } else { "sync" }
+        );
 
         if let Some(export) = instance.get_export(&mut *store, "_initialize") {
             if let Extern::Func(func) = export {
-                func.typed::<(), ()>(&store)?
-                    .call_async(&mut *store, ())
-                    .await
-                    .context("calling the Reactor initialization function")?;
+                if is_async_store {
+                    func.typed::<(), ()>(&store)?
+                        .call_async(&mut *store, ())
+                        .await
+                        .context("calling the async Reactor initialization function")?;
+                } else {
+                    func.typed::<(), ()>(&store)?
+                        .call(&mut *store, ())
+                        .context("calling the sync Reactor initialization function")?;
+                }
 
                 if self.get_init_func() == "_initialize" {
                     // Don't run `_initialize` twice if the it was explicitly
@@ -77,10 +87,17 @@ impl Wizer {
         let init_func = instance
             .get_typed_func::<(), ()>(&mut *store, self.get_init_func())
             .expect("checked by `validate_init_func`");
-        init_func
-            .call_async(&mut *store, ())
-            .await
-            .with_context(|| format!("the `{}` function trapped", self.get_init_func()))?;
+
+        if is_async_store {
+            init_func
+                .call_async(&mut *store, ())
+                .await
+                .with_context(|| format!("the async`{}` function trapped", self.get_init_func()))?;
+        } else {
+            init_func
+                .call(&mut *store, ())
+                .with_context(|| format!("the sync `{}` function trapped", self.get_init_func()))?;
+        }
 
         Ok(())
     }
